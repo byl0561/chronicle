@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+.env
+*.db
+*.db-shm
+*.db-wal
+
+# Node
+node_modules/
+dist/
+.vite/
+
+# Data
+backend/data/
+data/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
