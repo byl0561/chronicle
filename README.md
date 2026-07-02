@@ -180,7 +180,7 @@ npm run dev    # 监听 http://localhost:5173，/api/* 代理到 :8000
 chronicle/
 ├── backend/
 │   ├── app/
-│   │   ├── main.py           # FastAPI 入口 + 生命周期（自动建表 + 轻量列迁移）
+│   │   ├── main.py           # FastAPI 入口 + 生命周期（自动建表）
 │   │   ├── deps.py           # DB session 依赖注入
 │   │   ├── core/config.py    # 环境变量配置（CHRONICLE_ 前缀）
 │   │   ├── db/base.py        # SQLAlchemy engine（WAL + 外键）
