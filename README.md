@@ -9,9 +9,11 @@
 ## 功能
 
 - **自定义分类（Tab）**：按病种或身体系统组织指标，例如「慢性肾炎」「心血管」「肝功能」，支持颜色标识和排序
-- **自定义指标**：在分类下创建任意指标，设置单位、参考范围、方向（区间内正常 / 越低越好 / 越高越好）
+- **自定义指标**：在分类下创建任意指标，设置单位、默认参考范围、方向（区间内正常 / 越低越好 / 越高越好）
 - **快速录入**：弹出式表单录入数值、测量日期、备注，三步完成
-- **趋势图**：Chart.js 折线图，参考区间叠加绿色背景带，越界点自动标红
+- **记录级参考区间**：同一指标在不同医院测量方法/正常区间可能不同，每条记录可单独填写本次化验单的参考上/下限（留空则继承指标默认），越界判定按记录自己的区间
+- **检测来源**：每条记录可标注来源（医院/方法），录入时从历史来源自动补全
+- **趋势图**：概览卡片用「按各自区间归一化」的走势（跨医院方法可比，校平换院造成的假跳变）；详情页折线图用实际值 + 每条记录各自区间画的**阶梯参考带**，越界点自动标红
 - **仪表盘**：进入分类时以卡片形式展示所有指标的最新值与状态（正常 / 越界）
 - **历史记录**：查看某指标的全部历史，支持编辑和删除单条
 - **CSV 导入导出**：全量数据导出为 CSV，支持从同格式文件导入（幂等，重复跳过）
@@ -125,6 +127,11 @@ CSV 必须包含以下表头（顺序不限）：
 | `measured_at` | | 测量日期，格式 `YYYY-MM-DD` |
 | `value` | | 数值（有 `measured_at` 时必填） |
 | `note` | | 备注 |
+| `record_ref_low` | | 本条记录的参考下限（留空继承指标 `ref_low`） |
+| `record_ref_high` | | 本条记录的参考上限（留空继承指标 `ref_high`） |
+| `source` | | 检测来源（医院/方法） |
+
+> `ref_low` / `ref_high` 是**指标**的默认区间；`record_ref_low` / `record_ref_high` 是**单条记录**的区间，用于记录不同医院化验单印的不同参考范围，留空则回退到指标默认。
 
 **导入规则：**
 - 按 `tab_name` 查找或创建分类
@@ -135,10 +142,10 @@ CSV 必须包含以下表头（顺序不限）：
 **示例：**
 
 ```csv
-tab_name,tab_color,indicator_name,unit,ref_low,ref_high,direction,measured_at,value,note
-慢性肾炎,#3B5BDB,肌酐,μmol/L,44,133,range,2025-01-15,98.5,复查
-慢性肾炎,#3B5BDB,肌酐,μmol/L,44,133,range,2025-04-20,103.2,
-慢性肾炎,#3B5BDB,尿蛋白,g/L,0,0.15,range,2025-01-15,0.12,
+tab_name,tab_color,indicator_name,unit,ref_low,ref_high,direction,measured_at,value,note,record_ref_low,record_ref_high,source
+慢性肾炎,#3B5BDB,肌酐,μmol/L,44,133,range,2025-01-15,98.5,复查,,,A医院
+慢性肾炎,#3B5BDB,肌酐,μmol/L,44,133,range,2025-04-20,103.2,,80,133,B医院·酶法
+慢性肾炎,#3B5BDB,尿蛋白,g/L,0,0.15,range,2025-01-15,0.12,,,,
 ```
 
 ---
@@ -173,7 +180,7 @@ npm run dev    # 监听 http://localhost:5173，/api/* 代理到 :8000
 chronicle/
 ├── backend/
 │   ├── app/
-│   │   ├── main.py           # FastAPI 入口 + 生命周期（自动建表）
+│   │   ├── main.py           # FastAPI 入口 + 生命周期（自动建表 + 轻量列迁移）
 │   │   ├── deps.py           # DB session 依赖注入
 │   │   ├── core/config.py    # 环境变量配置（CHRONICLE_ 前缀）
 │   │   ├── db/base.py        # SQLAlchemy engine（WAL + 外键）
@@ -191,12 +198,15 @@ chronicle/
 │       ├── App.vue           # 布局外壳（侧边栏 + Tab 导航 + Toast）
 │       ├── style.css         # 设计系统（CSS 变量、组件样式）
 │       ├── api.js            # Axios 封装
-│       ├── store.js          # 全局状态 + 状态计算工具函数
+│       ├── store.js          # 全局状态 + 状态计算/归一化工具函数
 │       ├── components/
 │       │   ├── Icon.vue          # SVG 图标集
 │       │   ├── Sheet.vue         # 抽屉弹窗
 │       │   ├── ConfirmDialog.vue # 危险操作确认框
-│       │   └── IndicatorChart.vue # Chart.js 趋势图（含参考区间注释）
+│       │   ├── CustomSelect.vue  # 自定义下拉选择
+│       │   ├── DateInput.vue     # 自定义日历选择器
+│       │   ├── SourceInput.vue   # 检测来源输入（自由文本 + 历史补全）
+│       │   └── IndicatorChart.vue # Chart.js 趋势图（实际值 + 逐记录阶梯参考带）
 │       └── views/
 │           ├── Dashboard.vue      # Tab 仪表盘（指标卡片网格）
 │           ├── IndicatorDetail.vue # 趋势图 + 历史记录列表
@@ -217,7 +227,7 @@ chronicle/
 | 数据库 | SQLite（WAL 模式，`python-multipart` 支持文件上传） |
 | ORM | SQLAlchemy 2.0（声明式映射） |
 | 前端框架 | Vue 3 + Vite + Vue Router |
-| 图表 | Chart.js 4 + chartjs-plugin-annotation + chartjs-adapter-date-fns |
+| 图表 | Chart.js 4 + chartjs-adapter-date-fns |
 | HTTP 客户端 | Axios |
 | 反向代理 | nginx |
 | 容器 | Docker（两阶段构建，单容器运行） |
@@ -243,6 +253,7 @@ GET    /api/indicators/{indicator_id}/records
 POST   /api/indicators/{indicator_id}/records
 PATCH  /api/records/{id}
 DELETE /api/records/{id}
+GET    /api/sources                        # 历史检测来源（按频次，供录入补全）
 
 GET    /api/data/export
 POST   /api/data/import
