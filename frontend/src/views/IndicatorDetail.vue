@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from '../api.js'
-import { store, calcStatus, statusLabel, isRecordOutOfRange, directionLabel, fmtDate, fmtDateFull, askConfirm } from '../store.js'
+import { store, calcStatus, statusLabel, isRecordOutOfRange, effectiveRef, directionLabel, fmtDate, fmtDateFull, askConfirm } from '../store.js'
 import Icon from '../components/Icon.vue'
 import Sheet from '../components/Sheet.vue'
 import IndicatorChart from '../components/IndicatorChart.vue'
@@ -62,14 +62,14 @@ function openAdd() {
   addSheetOpen.value = true
 }
 
-// 选中历史来源后，用该来源在本指标下最近一条带区间的记录回填参考上下限
+// 选中历史来源后，用该来源在本指标下最近一条记录的有效区间回填参考上下限。
+// 注意：模板里 ref 已自动解包，传入的 form 是普通对象，直接改属性即可（勿用 .value）。
 function fillRangeFromSource(src, form) {
-  const rec = records.value.find(
-    (r) => r.source === src && (r.ref_low != null || r.ref_high != null),
-  )
+  const rec = records.value.find((r) => r.source === src)
   if (!rec) return
-  form.value.ref_low = rec.ref_low ?? ''
-  form.value.ref_high = rec.ref_high ?? ''
+  const { low, high } = effectiveRef(rec, indicator.value)
+  form.ref_low = low ?? ''
+  form.ref_high = high ?? ''
 }
 
 async function saveRecord() {

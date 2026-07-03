@@ -2,7 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from '../api.js'
-import { store, calcStatus, statusLabel, statusColor, sparkPoints, sparkArea, sparkSeries, fmtDate, refBarData, trendDelta, askConfirm } from '../store.js'
+import { store, calcStatus, statusLabel, statusColor, sparkPoints, sparkArea, sparkSeries, effectiveRef, fmtDate, refBarData, trendDelta, askConfirm } from '../store.js'
 import Icon from '../components/Icon.vue'
 import Sheet from '../components/Sheet.vue'
 import CustomSelect from '../components/CustomSelect.vue'
@@ -137,14 +137,13 @@ function openRecordEntry(ind, e) {
   api.records(ind.id).then((recs) => { activeRecords.value = recs }).catch(() => {})
 }
 
-// 选中历史来源后，用该来源在本指标下最近一条带区间的记录回填参考上下限
+// 选中历史来源后，用该来源在本指标下最近一条记录的有效区间回填参考上下限
 function fillRangeFromSource(src) {
-  const rec = activeRecords.value.find(
-    (r) => r.source === src && (r.ref_low != null || r.ref_high != null),
-  )
+  const rec = activeRecords.value.find((r) => r.source === src)
   if (!rec) return
-  recordForm.value.ref_low = rec.ref_low ?? ''
-  recordForm.value.ref_high = rec.ref_high ?? ''
+  const { low, high } = effectiveRef(rec, activeIndicator.value)
+  recordForm.value.ref_low = low ?? ''
+  recordForm.value.ref_high = high ?? ''
 }
 
 async function saveRecord() {
