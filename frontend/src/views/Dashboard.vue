@@ -2,7 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from '../api.js'
-import { store, calcStatus, statusLabel, statusColor, sparkPoints, sparkArea, sparkSeries, effectiveRef, fmtDate, refBarData, trendDelta, askConfirm } from '../store.js'
+import { store, calcStatus, statusLabel, statusColor, sparkPoints, sparkArea, sparkSeries, effectiveRef, fmtDateFull, refBarData, trendDelta, askConfirm } from '../store.js'
 import Icon from '../components/Icon.vue'
 import Sheet from '../components/Sheet.vue'
 import CustomSelect from '../components/CustomSelect.vue'
@@ -36,6 +36,15 @@ async function loadSources() {
 // sparkline 归一化取值序列
 function sparkNums(ind) {
   return sparkSeries(ind).nums
+}
+
+// 卡片参考值文字：用最新一次检测的有效区间（记录自带优先，回退指标默认），
+// 与卡片上的「最新值/日期」对应同一次检测；无记录时退回指标默认区间。
+function refText(ind) {
+  const { low, high } = effectiveRef(ind.latest_value, ind)
+  if (low == null && high == null) return ''
+  const u = ind.unit ? ' ' + ind.unit : ''
+  return `${low ?? '—'}–${high ?? '∞'}${u}`
 }
 
 onMounted(() => { loadIndicators(); loadSources() })
@@ -309,11 +318,9 @@ function goToDetail(ind) {
 
         <!-- 底部：参考范围 + 日期 + 快捷操作 -->
         <div class="mc-footer" @click.stop>
-          <span v-if="ind.ref_low != null || ind.ref_high != null" class="mc-ref">
-            {{ ind.ref_low ?? '—' }}–{{ ind.ref_high ?? '∞' }}{{ ind.unit ? ' ' + ind.unit : '' }}
-          </span>
+          <span v-if="refText(ind)" class="mc-ref">{{ refText(ind) }}</span>
           <span v-else class="mc-ref" />
-          <span v-if="ind.latest_value" class="mc-date">{{ fmtDate(ind.latest_value.measured_at) }}</span>
+          <span v-if="ind.latest_value" class="mc-date">{{ fmtDateFull(ind.latest_value.measured_at) }}</span>
           <div class="mc-btns">
             <button class="mc-btn" @click.stop="openEdit(ind, $event)" title="编辑指标">
               <Icon name="edit" :size="11" />
