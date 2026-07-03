@@ -88,6 +88,12 @@ export function calcStatus(indicator) {
   const { latest_value, direction } = indicator
   if (!latest_value) return 'nodata'
   const { low, high } = effectiveRef(latest_value, indicator)
+  // 该方向下是否存在可用的参考界；都没有 → 无从判断正常/越界
+  const judgeable =
+    direction === 'lower'  ? high != null :
+    direction === 'higher' ? low  != null :
+    (low != null || high != null)
+  if (!judgeable) return 'norange'
   return outOfRange(latest_value.value, low, high, direction) ? 'danger' : 'ok'
 }
 
@@ -103,7 +109,14 @@ export function isOutOfRange(value, indicator) {
 }
 
 export function statusLabel(status) {
-  return { ok: '正常', danger: '越界', nodata: '暂无' }[status] ?? ''
+  return { ok: '正常', danger: '越界', norange: '无区间', nodata: '暂无' }[status] ?? ''
+}
+
+// 状态对应的图形色（sparkline / 圆点等），与 CSS 状态色保持一致
+export function statusColor(status) {
+  return {
+    ok: '#2D9E5F', danger: '#D63F3F', norange: '#3B5BDB', nodata: '#94A3B8',
+  }[status] ?? '#2D9E5F'
 }
 
 export function directionLabel(direction) {
@@ -161,6 +174,14 @@ export function fmtDate(dateStr) {
   const parts = dateStr.split('-')
   if (parts.length < 3) return dateStr
   return `${+parts[1]}月${+parts[2]}日`
+}
+
+// 含年份的日期：2025-06-20 → 2025年6月20日（历史记录用，避免跨年歧义）
+export function fmtDateFull(dateStr) {
+  if (!dateStr) return ''
+  const parts = dateStr.split('-')
+  if (parts.length < 3) return dateStr
+  return `${+parts[0]}年${+parts[1]}月${+parts[2]}日`
 }
 
 // 参考范围进度条数据（用于卡片内可视化）

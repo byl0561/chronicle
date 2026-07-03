@@ -58,7 +58,11 @@ function buildChart() {
     isRecordOutOfRange(r, props.indicator) ? 8 : 6,
   )
 
-  // 阶梯参考带：上限、下限各一条阶梯线，两者都存在时填充成带
+  // 阶梯参考带：上限、下限各一条阶梯线，正常区间填充成绿色
+  //  - range ：[下限, 上限] 之间填充
+  //  - higher：正常区间 [下限, ∞) → 下限线往上填到 y 轴顶（fill:'end'）
+  //  - lower ：正常区间 (-∞, 上限] → 上限线往下填到 y 轴底（fill:'start'）
+  const direction = props.indicator.direction
   const bandStyle = {
     borderColor: bandLine,
     borderWidth: 1,
@@ -71,12 +75,17 @@ function buildChart() {
   }
   const datasets = []
   if (hasHigh) {
-    datasets.push({ ...bandStyle, label: '参考上限', data: highPts, fill: false })
+    datasets.push({
+      ...bandStyle, label: '参考上限', data: highPts,
+      fill: direction === 'lower' ? 'start' : false,
+      backgroundColor: bandFill,
+    })
   }
   if (hasLow) {
     datasets.push({
       ...bandStyle, label: '参考下限', data: lowPts,
-      fill: hasHigh ? '-1' : false,
+      // range: 填到上限线形成区间带；higher: 往上填到顶
+      fill: direction === 'higher' ? 'end' : (hasHigh ? '-1' : false),
       backgroundColor: bandFill,
     })
   }

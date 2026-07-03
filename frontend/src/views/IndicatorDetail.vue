@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from '../api.js'
-import { store, calcStatus, statusLabel, isRecordOutOfRange, directionLabel, fmtDate, askConfirm } from '../store.js'
+import { store, calcStatus, statusLabel, isRecordOutOfRange, directionLabel, fmtDate, fmtDateFull, askConfirm } from '../store.js'
 import Icon from '../components/Icon.vue'
 import Sheet from '../components/Sheet.vue'
 import IndicatorChart from '../components/IndicatorChart.vue'
@@ -60,6 +60,16 @@ function openAdd() {
     source: '',
   }
   addSheetOpen.value = true
+}
+
+// 选中历史来源后，用该来源在本指标下最近一条带区间的记录回填参考上下限
+function fillRangeFromSource(src, form) {
+  const rec = records.value.find(
+    (r) => r.source === src && (r.ref_low != null || r.ref_high != null),
+  )
+  if (!rec) return
+  form.value.ref_low = rec.ref_low ?? ''
+  form.value.ref_high = rec.ref_high ?? ''
 }
 
 async function saveRecord() {
@@ -231,7 +241,7 @@ const refDesc = computed(() => {
             :key="rec.id"
             class="record-item"
           >
-            <div class="record-date">{{ fmtDate(rec.measured_at) }}</div>
+            <div class="record-date">{{ fmtDateFull(rec.measured_at) }}</div>
             <div class="row" style="align-items:baseline; gap:0; min-width:80px">
               <div
                 class="record-value"
@@ -283,7 +293,7 @@ const refDesc = computed(() => {
       </div>
       <div class="field">
         <label>检测来源（可选）</label>
-        <SourceInput v-model="recordForm.source" :options="sources" />
+        <SourceInput v-model="recordForm.source" :options="sources" @select="(s) => fillRangeFromSource(s, recordForm)" />
       </div>
       <div class="grid2">
         <div class="field">
@@ -327,7 +337,7 @@ const refDesc = computed(() => {
       </div>
       <div class="field">
         <label>检测来源（可选）</label>
-        <SourceInput v-model="editForm.source" :options="sources" />
+        <SourceInput v-model="editForm.source" :options="sources" @select="(s) => fillRangeFromSource(s, editForm)" />
       </div>
       <div class="grid2">
         <div class="field">

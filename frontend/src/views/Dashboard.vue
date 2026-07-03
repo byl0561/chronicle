@@ -2,7 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from '../api.js'
-import { store, calcStatus, statusLabel, sparkPoints, sparkArea, sparkSeries, fmtDate, refBarData, trendDelta, askConfirm } from '../store.js'
+import { store, calcStatus, statusLabel, statusColor, sparkPoints, sparkArea, sparkSeries, fmtDate, refBarData, trendDelta, askConfirm } from '../store.js'
 import Icon from '../components/Icon.vue'
 import Sheet from '../components/Sheet.vue'
 import CustomSelect from '../components/CustomSelect.vue'
@@ -42,9 +42,10 @@ onMounted(() => { loadIndicators(); loadSources() })
 watch(tabId, loadIndicators)
 
 const summary = computed(() => ({
-  ok:     indicators.value.filter(i => calcStatus(i) === 'ok').length,
-  danger: indicators.value.filter(i => calcStatus(i) === 'danger').length,
-  nodata: indicators.value.filter(i => calcStatus(i) === 'nodata').length,
+  ok:      indicators.value.filter(i => calcStatus(i) === 'ok').length,
+  danger:  indicators.value.filter(i => calcStatus(i) === 'danger').length,
+  norange: indicators.value.filter(i => calcStatus(i) === 'norange').length,
+  nodata:  indicators.value.filter(i => calcStatus(i) === 'nodata').length,
 }))
 
 // ── 添加 / 编辑指标 Sheet ────────────────────────────────────────────────
@@ -115,6 +116,7 @@ async function deleteIndicator(ind, e) {
 // ── 快速录入 Sheet ────────────────────────────────────────────────────────
 const recordSheetOpen = ref(false)
 const activeIndicator = ref(null)
+const activeRecords = ref([])   // 当前指标的历史记录，供按来源回填区间
 const recordForm = ref({ value: '', measured_at: '', note: '' })
 
 function openRecordEntry(ind, e) {
@@ -130,6 +132,19 @@ function openRecordEntry(ind, e) {
     source: '',
   }
   recordSheetOpen.value = true
+  // 预取该指标历史记录，选中来源时用于回填区间
+  activeRecords.value = []
+  api.records(ind.id).then((recs) => { activeRecords.value = recs }).catch(() => {})
+}
+
+// 选中历史来源后，用该来源在本指标下最近一条带区间的记录回填参考上下限
+function fillRangeFromSource(src) {
+  const rec = activeRecords.value.find(
+    (r) => r.source === src && (r.ref_low != null || r.ref_high != null),
+  )
+  if (!rec) return
+  recordForm.value.ref_low = rec.ref_low ?? ''
+  recordForm.value.ref_high = rec.ref_high ?? ''
 }
 
 async function saveRecord() {
@@ -208,6 +223,11 @@ function goToDetail(ind) {
         <span class="do-num danger">{{ summary.danger }}</span>
         <span class="do-lbl">越界</span>
       </div>
+      <div v-if="summary.norange > 0" class="do-item">
+        <span class="do-dot norange" />
+        <span class="do-num norange">{{ summary.norange }}</span>
+        <span class="do-lbl">无区间</span>
+      </div>
       <div v-if="summary.nodata > 0" class="do-item">
         <span class="do-dot nodata" />
         <span class="do-num nodata">{{ summary.nodata }}</span>
@@ -251,11 +271,11 @@ function goToDetail(ind) {
             <defs>
               <linearGradient :id="`sg-${ind.id}`" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%"
-                  :stop-color="calcStatus(ind) === 'danger' ? '#D63F3F' : '#2D9E5F'"
+                  :stop-color="statusColor(calcStatus(ind))"
                   stop-opacity="0.2"
                 />
                 <stop offset="100%"
-                  :stop-color="calcStatus(ind) === 'danger' ? '#D63F3F' : '#2D9E5F'"
+                  :stop-color="statusColor(calcStatus(ind))"
                   stop-opacity="0"
                 />
               </linearGradient>
@@ -267,7 +287,7 @@ function goToDetail(ind) {
             <polyline
               :points="sparkPoints(sparkNums(ind))"
               fill="none"
-              :stroke="calcStatus(ind) === 'danger' ? '#D63F3F' : '#2D9E5F'"
+              :stroke="statusColor(calcStatus(ind))"
               stroke-width="1.6"
               stroke-linejoin="round"
               stroke-linecap="round"
@@ -361,7 +381,7 @@ function goToDetail(ind) {
       </div>
       <div class="field">
         <label>检测来源（可选）</label>
-        <SourceInput v-model="recordForm.source" :options="sources" />
+        <SourceInput v-model="recordForm.source" :options="sources" @select="fillRangeFromSource" />
       </div>
       <div class="grid2">
         <div class="field">

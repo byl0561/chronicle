@@ -30,6 +30,11 @@
   --warn-bg:     #FFFBEB;
   --warn-border: #FDE68A;
 
+  --info:        #3B5BDB;  /* 无参考区间（靛蓝·中性，不作正常/越界判断） */
+  --info-bg:     #EEF2FF;
+  --info-border: #C7D2FE;
+  --info-text:   #3730A3;
+
   /* 主背景与表面 */
   --bg:          #F1F5F9;  /* 极浅石板灰 */
   --surface:     #FFFFFF;
@@ -93,6 +98,11 @@
     --warn:        #FBBF24;
     --warn-bg:     rgba(196,122,27,.12);
     --warn-border: rgba(196,122,27,.3);
+
+    --info:        #7C93F0;
+    --info-bg:     rgba(79,109,232,.15);
+    --info-border: rgba(79,109,232,.35);
+    --info-text:   #A5B4E8;
 
     --bg:          #0B1120;
     --surface:     #151E2E;
@@ -392,6 +402,7 @@ input, select, textarea, button { font: inherit; color: inherit; }
   background: linear-gradient(180deg, rgba(214,63,63,.035) 0%, var(--surface) 72px);
 }
 .metric-card.status-nodata { border-top: 2px dashed var(--border-2); }
+.metric-card.status-norange { border-top: 2.5px solid var(--info-border); }
 
 /* 卡片头部：名称 + 状态徽章 */
 .mc-header {
@@ -410,6 +421,7 @@ input, select, textarea, button { font: inherit; color: inherit; }
 }
 .mc-badge.ok     { background: var(--ok-bg);    color: var(--ok-text); }
 .mc-badge.danger  { background: var(--danger-bg); color: var(--danger-text); }
+.mc-badge.norange { background: var(--info-bg);   color: var(--info-text); }
 .mc-badge.nodata  { background: var(--surface-3); color: var(--muted); }
 
 /* 数值区域 */
@@ -504,7 +516,7 @@ input, select, textarea, button { font: inherit; color: inherit; }
 .record-item:last-child { border-bottom: none; }
 .record-item:hover { background: var(--surface-2); }
 
-.record-date { font-size: 12.5px; color: var(--muted); min-width: 70px; font-variant-numeric: tabular-nums; }
+.record-date { font-size: 12.5px; color: var(--muted); min-width: 96px; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .record-value {
   font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums;
   min-width: 80px; letter-spacing: -.3px;
@@ -786,6 +798,8 @@ input[type="number"] { -moz-appearance: textfield; }
 }
 .badge.ok      { background: var(--ok-bg); color: var(--ok-text); border: 1px solid var(--ok-border); }
 .badge.danger   { background: var(--danger-bg); color: var(--danger-text); border: 1px solid var(--danger-border); }
+.badge.norange  { background: var(--info-bg); color: var(--info-text); border: 1px solid var(--info-border); }
+.badge.nodata   { background: var(--surface-3); color: var(--muted); border: 1px solid var(--border); }
 .badge.neutral  { background: var(--surface-3); color: var(--muted); border: 1px solid var(--border); }
 
 /* ═══ 设置页面的列表项 ══════════════════════════════ */
@@ -836,6 +850,7 @@ input[type="number"] { -moz-appearance: textfield; }
 }
 .do-dot.ok     { background: var(--ok); box-shadow: 0 0 0 3px rgba(45,158,95,.15); }
 .do-dot.danger { background: var(--danger); box-shadow: 0 0 0 3px rgba(214,63,63,.15); }
+.do-dot.norange { background: var(--info); box-shadow: 0 0 0 3px rgba(59,91,219,.15); }
 .do-dot.nodata { background: var(--border-2); }
 .do-num {
   font-size: 22px; font-weight: 800; line-height: 1;
@@ -843,6 +858,7 @@ input[type="number"] { -moz-appearance: textfield; }
 }
 .do-num.ok     { color: var(--ok); }
 .do-num.danger { color: var(--danger); }
+.do-num.norange { color: var(--info); }
 .do-num.nodata { color: var(--muted); }
 .do-lbl { font-size: 12px; color: var(--text-2); font-weight: 500; }
 @media (max-width: 480px) {

@@ -12,7 +12,7 @@ const props = defineProps({
   options:     { type: Array,  default: () => [] }, // 历史来源字符串数组
   placeholder: { type: String, default: '例如：协和医院 · 酶法（可留空）' },
 })
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits(['update:modelValue', 'select'])
 
 const open = ref(false)
 const el   = ref(null)
@@ -30,7 +30,7 @@ function onInput(e) {
   open.value = true
 }
 function onFocus() { if (suggestions.value.length) open.value = true }
-function pick(val) { emit('update:modelValue', val); open.value = false }
+function pick(val) { emit('update:modelValue', val); emit('select', val); open.value = false }
 function onClickOut(e) { if (el.value && !el.value.contains(e.target)) open.value = false }
 function onKey(e) { if (e.key === 'Escape') open.value = false }
 
