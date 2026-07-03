@@ -23,7 +23,7 @@ export const api = {
   reorderTabs: (items)      => http.post('/tabs/reorder', { items }),
 
   // ── Indicators ────────────────────────────────────
-  indicators:        (tabId)      => http.get(`/tabs/${tabId}/indicators`).then((r) => r.data),
+  indicators:        (tabId, since) => http.get(`/tabs/${tabId}/indicators`, { params: since ? { since } : {} }).then((r) => r.data),
   createIndicator:   (tabId, d)   => http.post(`/tabs/${tabId}/indicators`, d).then((r) => r.data),
   updateIndicator:   (id, d)      => http.patch(`/indicators/${id}`, d).then((r) => r.data),
   deleteIndicator:   (id)         => http.delete(`/indicators/${id}`),

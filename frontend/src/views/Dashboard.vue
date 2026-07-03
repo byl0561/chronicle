@@ -19,11 +19,32 @@ const indicators = ref([])
 const loading = ref(false)
 const sources = ref([])
 
+// 概览时间范围筛选（仅影响概览，详情页不受影响）
+const TIME_RANGES = [
+  { value: 'all', label: '全部时间' },
+  { value: '3m',  label: '近 3 个月' },
+  { value: '6m',  label: '近 6 个月' },
+  { value: '1y',  label: '近 1 年' },
+  { value: '3y',  label: '近 3 年' },
+]
+const timeRange = ref('all')
+
+// 把范围代码换算成起始日期 YYYY-MM-DD；all 返回 null（不筛选）
+function sinceDate(range) {
+  if (range === 'all') return null
+  const d = new Date()
+  if (range === '3m') d.setMonth(d.getMonth() - 3)
+  else if (range === '6m') d.setMonth(d.getMonth() - 6)
+  else if (range === '1y') d.setFullYear(d.getFullYear() - 1)
+  else if (range === '3y') d.setFullYear(d.getFullYear() - 3)
+  return d.toISOString().slice(0, 10)
+}
+
 async function loadIndicators() {
   if (!tabId.value) return
   loading.value = true
   try {
-    indicators.value = await api.indicators(tabId.value)
+    indicators.value = await api.indicators(tabId.value, sinceDate(timeRange.value))
   } finally {
     loading.value = false
   }
@@ -49,6 +70,7 @@ function refText(ind) {
 
 onMounted(() => { loadIndicators(); loadSources() })
 watch(tabId, loadIndicators)
+watch(timeRange, loadIndicators)
 
 const summary = computed(() => ({
   ok:      indicators.value.filter(i => calcStatus(i) === 'ok').length,
@@ -201,6 +223,9 @@ function goToDetail(ind) {
         <div class="sub">{{ indicators.length }} 个指标</div>
       </div>
       <div class="page-head-actions">
+        <div class="time-range-select">
+          <CustomSelect v-model="timeRange" :options="TIME_RANGES" />
+        </div>
         <button class="btn btn-primary btn-sm" @click="openAdd">
           <Icon name="plus" :size="15" /> 添加指标
         </button>
@@ -418,4 +443,6 @@ function goToDetail(ind) {
   width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
   display: inline-block;
 }
+/* 概览时间范围下拉：限宽，避免 CustomSelect 占满 */
+.time-range-select { width: 128px; flex-shrink: 0; }
 </style>

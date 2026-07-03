@@ -516,7 +516,7 @@ input, select, textarea, button { font: inherit; color: inherit; }
 .record-item:last-child { border-bottom: none; }
 .record-item:hover { background: var(--surface-2); }
 
-.record-date { font-size: 12.5px; color: var(--muted); min-width: 96px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.record-date { font-size: 12.5px; color: var(--muted); width: 104px; flex-shrink: 0; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .record-value {
   font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums;
   min-width: 80px; letter-spacing: -.3px;

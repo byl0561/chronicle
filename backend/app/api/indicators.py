@@ -1,3 +1,6 @@
+from datetime import date
+from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -17,8 +20,12 @@ router = APIRouter(tags=["indicators"])
 TREND_LIMIT = 30  # 趋势图最多取最近 N 条记录
 
 
-def _enrich(indicator: Indicator) -> IndicatorOut:
+def _enrich(indicator: Indicator, since: Optional[date] = None) -> IndicatorOut:
     records = sorted(indicator.records, key=lambda r: r.measured_at)
+    # 概览时间范围筛选：只保留 measured_at >= since 的记录，
+    # latest_value/trend_values/状态都基于筛选后的记录重算。
+    if since is not None:
+        records = [r for r in records if r.measured_at >= since]
 
     def eff_low(r):
         return r.ref_low if r.ref_low is not None else indicator.ref_low
@@ -51,7 +58,9 @@ def _enrich(indicator: Indicator) -> IndicatorOut:
 
 
 @router.get("/tabs/{tab_id}/indicators", response_model=list[IndicatorOut])
-def list_indicators(tab_id: int, db: Session = Depends(get_db)):
+def list_indicators(
+    tab_id: int, since: Optional[date] = None, db: Session = Depends(get_db)
+):
     if not db.get(Tab, tab_id):
         raise HTTPException(404, "分类不存在")
     indicators = (
@@ -60,7 +69,7 @@ def list_indicators(tab_id: int, db: Session = Depends(get_db)):
         .order_by(Indicator.sort, Indicator.id)
         .all()
     )
-    return [_enrich(i) for i in indicators]
+    return [_enrich(i, since) for i in indicators]
 
 
 @router.post("/tabs/{tab_id}/indicators", response_model=IndicatorOut, status_code=201)

@@ -242,7 +242,7 @@ const refDesc = computed(() => {
             class="record-item"
           >
             <div class="record-date">{{ fmtDateFull(rec.measured_at) }}</div>
-            <div class="row" style="align-items:baseline; gap:0; min-width:80px">
+            <div class="row" style="align-items:baseline; gap:0; width:96px; flex-shrink:0">
               <div
                 class="record-value"
                 :class="{ danger: indicator && isRecordOutOfRange(rec, indicator) }"
